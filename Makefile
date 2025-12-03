@@ -1,5 +1,5 @@
-# R Jesse Chaney
-# rchaney@pdx.edu
+# NIKKI RUDNICK
+# nrudnick@pdx.edu
 
 CC = gcc
 DEBUG = -g3 -O0
@@ -18,7 +18,7 @@ CFLAGS += $(LOCAL_INCLUDES)
 LDFLAGS =
 LDFLAGS += $(DEBUG)
 PERMS = a+rx,g-w
-PROG1 = argon2_example
+PROG1 = vargon-threads
 PROG2 = 
 PROG3 = 
 PROG4 = 
@@ -42,9 +42,10 @@ clean cls:
 	rm -f $(PROGS) *.o *~ \#* 
 
 # You might prefer git
-ci:
-	if [ ! -d RCS ] ; then mkdir RCS; fi
-	ci -t-none -m"lazy-argon" -l *.[ch] ?akefile *.txt
+gotta git get gat:
+	if [ ! -d .git ] ; then git init; fi
+	git add *.[ch] ?akefile
+	git commit -m"Gotta git that"
 
 co:
 	co -f -l RCS/*.[ch] RCS/?akefile*
