@@ -20,25 +20,114 @@
 
 #define BUF_SIZE 1000
 
-	int
+int is_verbose;
+
+void 
+run_password_cracker(char *, char *);
+
+void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
+{
+	FILE *hash_file;
+	FILE *dictionary_file;
+	
+	char hash_buf[BUF_SIZE];
+	char dict_buf[BUF_SIZE];
+	
+	//char *username = NULL;
+	char *hash_string = NULL;
+	char *dict_word = NULL;
+	int result = -1;
+
+	const argon2_type argon2_algo = Argon2_id;
+
+	//open files once
+	//open the hash file
+	if((hash_file = fopen(hash_file_name, "r")) == NULL) 
+	{
+		perror("error opening hash file");
+		exit(EXIT_FAILURE);
+	}
+
+	//open dictionary file 
+	if((dictionary_file = fopen(dictionary_file_name, "r")) == NULL) 
+	{
+		perror("error opening dictionary file");
+		fclose(hash_file);
+		exit(EXIT_FAILURE);
+	}
+
+	// outer loop: read one hash line at a time
+	while(fgets(hash_buf, BUF_SIZE, hash_file) != NULL)
+	{
+		// clean newline
+		int found = 0;
+
+		hash_buf[strcspn(hash_buf, "\n")] = 0;
+
+		/*// parse "username:hash"
+		username = strtok(hash_buf, ":");
+		hash_string = strtok(NULL, ":");
+
+		if (!username || !hash_string) continue;
+
+		if (verbose) 
+		{
+			fprintf(stderr, "verbose: processing user %s\n", username);
+		}*/
+
+		// reset dictionary file to the beginning
+
+		rewind(dictionary_file);
+
+		// inner loop: check every word in dictionary against this hash
+		while(fgets(dict_buf, BUF_SIZE, dictionary_file) != NULL)
+		{
+			// clean newline from dictionary word
+			dict_buf[strcspn(dict_buf, "\n")] = 0;
+			dict_word = dict_buf;
+
+			// verify
+			result = argon2_verify(hash_string, dict_word, strlen(dict_word), argon2_algo);
+			
+			if(result == ARGON2_OK) 
+			{
+				// match found: print cracked and break loop
+				printf("CRACKED: %s %s\n", dict_word, hash_string);
+				found = 1;
+				break; 
+			}
+		}
+
+		if(found == 0)
+		{
+			printf("*** FAILED ***:  %s\n", hash_string);
+		}
+	}
+
+	// close files once
+	fclose(dictionary_file);
+	fclose(hash_file);
+}
+
+int
 main(int argc, char *argv[])
 {
-	char buf[BUF_SIZE] = {'\0'};
+	/*char buf[BUF_SIZE] = {'\0'};
 	char *hash = NULL;
 	char *password = NULL;
 	int result = 0;
-	const argon2_type argon2_algo = Argon2_id;
+	const argon2_type argon2_algo = Argon2_id;*/
 
 	int num_threads = 1;
 	char * input_file_name = NULL;
-	char * dictionary_file_name = NULL:
+	char * dictionary_file_name = NULL;
 	char * output_file_name = NULL;
 
 
 	//-------------------------------
 	//process getopt
 	int opt;
-	int is_verbose = 0;
+	//int is_verbose = 0;
 	int input_file_flag = 0;
 	int dictionary_file_flag = 0;
 
@@ -52,7 +141,7 @@ main(int argc, char *argv[])
 					command line option.*/
 				input_file_flag++;
 
-				input_file = optarg;
+				input_file_name = optarg;
 				break;
 			case 'P':
 				/*Specify the name of the dictionary file that contains plain-text words
@@ -60,12 +149,12 @@ main(int argc, char *argv[])
 					command line option.*/
 				dictionary_file_flag++;
 
-				dictionary_file = optarg;
+				dictionary_file_name = optarg;
 				break;
 			case 'o':
 				/*Specify the name of the output file. If this option is not specified for
 					input, stdout is written.*/
-				output_file = optarg
+				output_file_name = optarg;
 				break;
 			case 't':
 				/*Specify the number of threads to use. The default is to use a single
@@ -140,15 +229,25 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	//redirect output if necesarry
+	if (output_file_name != NULL)
+	{
+		if (freopen(output_file_name, "w", stdout) == NULL)
+		{
+			perror("Error opening output file");
+			exit(EXIT_FAILURE);
+		}
+	}
 
+	run_password_cracker(input_file_name, dictionary_file_name);
 	//-------------------------------
 
-	//devide input and dictionary file
-	//find num of lines
-	//fork and process divied up files
-	//reap processes
+	//DO VIDEO ASSIGNMENT
 
+	//give each thread a password hash and have them run through dictrionary to check
+	//print suc/fail info
 
+/*
 	while(fgets(buf, BUF_SIZE, stdin) != NULL)
 	{
 		password = strtok(buf, ":\n");
@@ -171,7 +270,7 @@ main(int argc, char *argv[])
 		{
 			printf("*** FAILED ***:  %s\n", hash);
 		}
-	}
+	}*/
 
 	return EXIT_SUCCESS;
 }
