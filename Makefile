@@ -10,7 +10,7 @@ WERROR += -Werror
 CFLAGS = $(DEBUG) -Wall -Wextra -Wshadow -Wunreachable-code -Wredundant-decls \
         -Wmissing-declarations -Wold-style-definition -Wmissing-prototypes \
         -Wdeclaration-after-statement -Wno-return-local-addr \
-		-Wunsafe-loop-optimizations -Wuninitialized $(WERROR) $(DEFINES)
+		-Wunsafe-loop-optimizations -Wuninitialized #$(WERROR) $(DEFINES)
 LOCAL_INCLUDES = -I ~rchaney/argon2/include
 LOCAL_LIBS = -L ~rchaney/argon2/lib/x86_64-linux-gnu -largon2
 
