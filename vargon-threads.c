@@ -40,7 +40,8 @@ void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
 
 	const argon2_type argon2_algo = Argon2_id;
 
-	//open files once
+	//open files once!!
+
 	//open the hash file
 	if((hash_file = fopen(hash_file_name, "r")) == NULL) 
 	{
@@ -63,20 +64,9 @@ void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
 		int found = 0;
 
 		hash_buf[strcspn(hash_buf, "\n")] = 0;
-
-		/*// parse "username:hash"
-		username = strtok(hash_buf, ":");
-		hash_string = strtok(NULL, ":");
-
-		if (!username || !hash_string) continue;
-
-		if (verbose) 
-		{
-			fprintf(stderr, "verbose: processing user %s\n", username);
-		}*/
+		hash_string = hash_buf;
 
 		// reset dictionary file to the beginning
-
 		rewind(dictionary_file);
 
 		// inner loop: check every word in dictionary against this hash
