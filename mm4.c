@@ -201,6 +201,7 @@ main(int argc, char *argv[])
 	for(tid = 0; tid < num_threads; tid ++)
 	{
 		pthread_create(&threads[tid], NULL, mult, (void *) tid);
+	//pthread_create(&threads[tid], NULL, run_password_cracker, (void *) tid);
 	}
 	for(tid = 0; tid < num_threads; tid ++)
 	{

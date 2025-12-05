@@ -20,34 +20,41 @@
 
 #define BUF_SIZE 1000
 
-int is_verbose;
+static int is_verbose = 0;
+static int num_threads = 1;
+static FILE *hash_file;
+static char * dictionary_file_name = NULL;
 
-void 
-run_password_cracker(char *, char *);
+void *
+run_password_cracker(void*);
 
-void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
+	void *
+run_password_cracker(void *vid)
 {
-	FILE *hash_file;
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+	//FILE *hash_file;
 	FILE *dictionary_file;
-	
+
 	char hash_buf[BUF_SIZE];
 	char dict_buf[BUF_SIZE];
-	
+
 	//char *username = NULL;
 	char *hash_string = NULL;
 	char *dict_word = NULL;
+	char * flag = NULL;
 	int result = -1;
 
 	const argon2_type argon2_algo = Argon2_id;
 
 	//open files once!!
 
-	//open the hash file
-	if((hash_file = fopen(hash_file_name, "r")) == NULL) 
-	{
+	/*//open the hash file
+		if((hash_file = fopen(hash_file_name, "r")) == NULL) 
+		{
 		perror("error opening hash file");
 		exit(EXIT_FAILURE);
-	}
+		}*/
 
 	//open dictionary file 
 	if((dictionary_file = fopen(dictionary_file_name, "r")) == NULL) 
@@ -58,8 +65,18 @@ void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
 	}
 
 	// outer loop: read one hash line at a time
-	while(fgets(hash_buf, BUF_SIZE, hash_file) != NULL)
+	while(1)
 	{
+		pthread_mutex_lock(&lock);
+
+		flag = fgets(hash_buf, BUF_SIZE, hash_file);
+
+		pthread_mutex_unlock(&lock);
+
+		if(flag == NULL)
+		{
+			break;
+		}
 		// clean newline
 		int found = 0;
 
@@ -78,7 +95,7 @@ void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
 
 			// verify
 			result = argon2_verify(hash_string, dict_word, strlen(dict_word), argon2_algo);
-			
+
 			if(result == ARGON2_OK) 
 			{
 				// match found: print cracked and break loop
@@ -96,28 +113,34 @@ void run_password_cracker(char *hash_file_name, char *dictionary_file_name)
 
 	// close files once
 	fclose(dictionary_file);
-	fclose(hash_file);
+	//fclose(hash_file);
+
+	pthread_exit(EXIT_SUCCESS);
 }
 
-int
+	int
 main(int argc, char *argv[])
 {
 	/*char buf[BUF_SIZE] = {'\0'};
-	char *hash = NULL;
-	char *password = NULL;
-	int result = 0;
-	const argon2_type argon2_algo = Argon2_id;*/
+		char *hash = NULL;
+		char *password = NULL;
+		int result = 0;
+		const argon2_type argon2_algo = Argon2_id;*/
 
-	int num_threads = 1;
+	//num_threads = 1;
 	char * input_file_name = NULL;
-	char * dictionary_file_name = NULL;
+	//char * dictionary_file_name = NULL;
 	char * output_file_name = NULL;
 
+	//FILE *hash_file;
+	//FILE *dictionary_file;
+	pthread_t *threads = NULL;
+	long tid = 0;
 
 	//-------------------------------
 	//process getopt
-	int opt;
 	//int is_verbose = 0;
+	int opt;
 	int input_file_flag = 0;
 	int dictionary_file_flag = 0;
 
@@ -229,7 +252,39 @@ main(int argc, char *argv[])
 		}
 	}
 
-	run_password_cracker(input_file_name, dictionary_file_name);
+	//open the hash file
+	if((hash_file = fopen(input_file_name, "r")) == NULL) 
+	{
+		perror("error opening hash file");
+		exit(EXIT_FAILURE);
+	}
+
+	//open dictionary file 
+	/*if((dictionary_file = fopen(dictionary_file_name, "r")) == NULL) 
+		{
+		perror("error opening dictionary file");
+		fclose(hash_file);
+		exit(EXIT_FAILURE);
+		}*/
+
+	threads = malloc(num_threads * sizeof(pthread_t));
+
+	for(tid = 0; tid < num_threads; tid ++)
+	{
+		pthread_create(&threads[tid], NULL, run_password_cracker, (void *) tid);
+	}
+	for(tid = 0; tid < num_threads; tid ++)
+	{
+		pthread_join(threads[tid], NULL);
+	}
+
+	free(threads);
+
+
+
+	//	fclose(dictionary_file);
+	fclose(hash_file);
+	//run_password_cracker(input_file, dictionary_file);
 	//-------------------------------
 
 	//DO VIDEO ASSIGNMENT
@@ -237,29 +292,29 @@ main(int argc, char *argv[])
 	//give each thread a password hash and have them run through dictrionary to check
 	//print suc/fail info
 
-/*
-	while(fgets(buf, BUF_SIZE, stdin) != NULL)
+	/*
+		 while(fgets(buf, BUF_SIZE, stdin) != NULL)
+		 {
+		 password = strtok(buf, ":\n");
+		 if (password == NULL)
+		 {
+		 fprintf(stderr, "Baaaad input >>%s<<\n", buf);
+		 continue;
+		 }
+		 hash = strtok(NULL, ":\n");//strtok is not threat safe
+
+	// In case you want to see the strings before being hashed
+	//printf("TESTING: >>%s<< >>%s<<\n", password, hash);
+
+	result = argon2_verify(hash, password, strlen(password), argon2_algo);
+	if (result == ARGON2_OK)
+	{		
+	printf("CRACKED: %s %s\n", password, hash);
+	}
+	else 
 	{
-		password = strtok(buf, ":\n");
-		if (password == NULL)
-		{
-			fprintf(stderr, "Baaaad input >>%s<<\n", buf);
-			continue;
-		}
-		hash = strtok(NULL, ":\n");//strtok is not threat safe
-
-		// In case you want to see the strings before being hashed
-		//printf("TESTING: >>%s<< >>%s<<\n", password, hash);
-
-		result = argon2_verify(hash, password, strlen(password), argon2_algo);
-		if (result == ARGON2_OK)
-		{		
-			printf("CRACKED: %s %s\n", password, hash);
-		}
-		else 
-		{
-			printf("*** FAILED ***:  %s\n", hash);
-		}
+	printf("*** FAILED ***:  %s\n", hash);
+	}
 	}*/
 
 	return EXIT_SUCCESS;
